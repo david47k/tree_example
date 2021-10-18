@@ -14,16 +14,11 @@ pub struct TreeNodeRef<T> where T: Clone {
 	inner: Arc<RwLock<TreeNode<T>>>,
 }
 
-#[derive(Clone)]
-pub struct TreeNodeWeak<T> where T: Clone {
-	inner: Weak<RwLock<TreeNode<T>>>,
-}
-
 impl<T> TreeNodeRef<T> where T: Clone + PartialEq {
-	pub fn val(&self) -> T {
+	pub fn val(&self) -> T {					// get the val of this node
 		self.inner.read().unwrap().val.clone()
 	}
-	pub fn set_val(&mut self, val: T) {
+	pub fn set_val(&mut self, val: T) {			// set the val of this node
 		self.inner.write().unwrap().val = val;
 	}
 	pub fn parent(&self) -> Option<Self> { 		// return strong form of parent
@@ -93,7 +88,7 @@ impl<T> TreeNodeRef<T> where T: Clone + PartialEq {
 		// Update our our own parent reference
 		inner.parent = Some(dest.clone().downgrade());
 	}
-	pub fn new(v: T) -> Self {				// create a new root node
+	pub fn new(v: T) -> Self {								// create a new root node
 		Self {
 			inner: Arc::new(RwLock::new(TreeNode {
 				parent: None,
@@ -102,7 +97,7 @@ impl<T> TreeNodeRef<T> where T: Clone + PartialEq {
 			})),
 		}
 	}
-	pub fn push_vertical(&mut self, v: &Vec::<T>) -> TreeNodeRef<T> { // This pushes child then their child, then their child etc.
+	pub fn push_vertical(&mut self, v: &Vec::<T>) -> TreeNodeRef<T> { // this pushes child, then their child, then their child etc.
 		let mut n = self.clone();
 		for i in 0..v.len() {
 			n = n.push(v[i].clone());
@@ -117,10 +112,10 @@ impl<T> TreeNodeRef<T> where T: Clone + PartialEq {
 		}
 		n
 	}
-	pub fn children(&self) -> Vec::<TreeNodeRef::<T>> { 
+	pub fn children(&self) -> Vec::<TreeNodeRef::<T>> { 	// return a clone of the children vec
 		self.inner.read().unwrap().children.clone()
 	}
-	pub fn to_vertical_vec(&self) -> Vec<T> {	// find out our parent, and their parent, and their parent etc.
+	pub fn to_vertical_vec(&self) -> Vec<T> {				// find out our parent, and their parent, and their parent etc.
 		let mut v = Vec::<T>::new();
 		let mut n = self.clone();
 		while !n.is_root() {
@@ -129,7 +124,7 @@ impl<T> TreeNodeRef<T> where T: Clone + PartialEq {
 		}
 		v
 	}
-	pub fn print_tree_size(&self) {
+	pub fn print_tree_size(&self) {							// print some info on the tree, useful for debugging
 		// first find root
 		let mut nptr = self.clone();
 		while nptr.len() > 0 {
@@ -156,12 +151,12 @@ impl<T> TreeNodeRef<T> where T: Clone + PartialEq {
 		}
 		println!("Tree has {} nodes, {} MB, max strong references {}", count, count * std::mem::size_of::<TreeNode::<T>>() / (1024*1024), max_strong);
 	}
-	pub fn downgrade(self) -> TreeNodeWeak::<T> {
+	pub fn downgrade(self) -> TreeNodeWeak::<T> {		// downgrade this ref to a weak form (weak form doesn't affect reference count)
 		TreeNodeWeak::<T> {
 			inner: Arc::downgrade(&self.inner),
 		}
 	}
-	pub fn find(&self, val: T) -> Option<TreeNodeRef<T>> {
+	pub fn find(&self, val: T) -> Option<TreeNodeRef<T>> {	// find the child node with the given value, and return a ref to it
 		let inner = self.inner.read().unwrap();
 		let r = inner.children.iter().find(|&n| n.val()==val);
 		match r {
@@ -171,8 +166,13 @@ impl<T> TreeNodeRef<T> where T: Clone + PartialEq {
 	}
 } 
 
+#[derive(Clone)]
+pub struct TreeNodeWeak<T> where T: Clone {
+	inner: Weak<RwLock<TreeNode<T>>>,
+}
+
 impl<T> TreeNodeWeak<T> where T: Clone {
-	pub fn upgrade(self) -> TreeNodeRef<T> {
+	pub fn upgrade(self) -> TreeNodeRef<T> {	// upgrade this weak ref into a strong one
 		TreeNodeRef {
 			inner: self.inner.upgrade().unwrap()
 		}
